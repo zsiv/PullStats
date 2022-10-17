@@ -27,7 +27,7 @@ To do:
 -- run this script to create table/cols
 CREATE TABLE IF NOT EXISTS gameindex (
     gamePk    INT PRIMARY KEY NOT NULL,
-    gameDate  VARCHAR(50) NOT NULL
+    gameDate  DATE NOT NULL
 );
 
 -- place an index on gameDate col

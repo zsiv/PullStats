@@ -60,7 +60,9 @@ def lambda_handler(event, context):
             for game in date["games"]:
                 try: 
                     gamePk = game["gamePk"]
-                    gameDate = game["gameDate"]
+                    gameDateTime = game["gameDate"]
+                    day, split, time = gameDateTime.partition('T')
+                    gameDate = day
                     postgres_conn.run(f"INSERT INTO gameindex(gamepk,gamedate) VALUES({gamePk}, '{gameDate}') ON CONFLICT ON CONSTRAINT gameindex_pkey DO NOTHING;")
                 except Exception as e:
                     print(e)

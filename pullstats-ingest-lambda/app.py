@@ -25,6 +25,7 @@ import json
 import boto3
 import boto3.session
 from botocore.config import Config
+import pg8000.native
 import warnings
 import logging
 import datetime
@@ -39,6 +40,15 @@ def lambda_handler(event, context):
 
     # set option that silences "futurewarning" (see: https://github.com/boto/botocore/issues/2705)
     warnings.filterwarnings('ignore', category=FutureWarning, module='botocore.client')
+
+    # establish postgres db connection
+    postgres_conn = pg8000.native.Connection(
+        user="pullstatsadmin",
+        password="ChangeMe!",
+        host="pullstats-aurora-db.cqealbrbwgme.us-east-1.rds.amazonaws.com",
+        port="5432",
+        database="PullStats"
+    )
 
     # establish sqs client
     boto_sqs = boto3.client('sqs', endpoint_url='https://sqs.us-east-1.amazonaws.com')
@@ -82,30 +92,40 @@ def lambda_handler(event, context):
 
         print (f'exiting queue send for year {year}')
 
-    # # get requested import dates from lambda call
-    # start_date_string = event.get('start_date')
-    # end_date_string = event.get('end_date')
+    # get requested import dates from lambda call
+    start_date_string = event.get('start_date')
+    end_date_string = event.get('end_date')
 
-    # # convert from string to datetime
-    # date_format = "%m/%d/%Y"
-    # start_date = datetime.datetime.strptime(start_date_string, date_format)
-    # end_date = datetime.datetime.strptime(end_date_string, date_format)
+    # convert from string to datetime
+    date_format = "%m/%d/%Y"
+    start_date = datetime.datetime.strptime(start_date_string, date_format)
+    end_date = datetime.datetime.strptime(end_date_string, date_format)
 
-    # # check for date sanity vs available dataset
-    # if start_date.year > 2019 and end_date.year < 2023:
-    #     # make API request
-    #     for url in ['https://statsapi.mlb.com/api/v1/people?personIds=605151,592450&season=2018&hydrate=education']:
-    #         try:
-    #             req = requests.get(url)
-    #             req.raise_for_status()
-    #         except HTTPError as http_err:
-    #             print(f'Game Data API call returned HTTP error')
-    #         except Exception as err:
-    #             print(f'Game Data API call returned a non-HTTP error')
-    #         else:
-    #             print(f'Game Data API call successful')
-    # else:
-    #     logger.error(f'start year {start_date.year} or end year {end_date.year} is not a valid year.')
+    # check for date sanity vs available dataset
+    if start_date.year > 2019 and end_date.year < 2023:
+        target_list= []
+
+        # pull set of game ids to retrieve:
+        try: 
+            for row in postgres_conn.run(f"SELECT gamepk FROM gameindex WHERE gamedate BETWEEN {start_date} AND {end_date};"):
+                target_list.append(row)
+        except Exception as e:
+            print(e)
+        
+        print(f'pulled {len(target_list)} keys')
+        # # make API request
+        # for url in ['https://statsapi.mlb.com/api/v1/people?personIds=605151,592450&season=2018&hydrate=education']:
+        #     try:
+        #         req = requests.get(url)
+        #         req.raise_for_status()
+        #     except HTTPError as http_err:
+        #         print(f'Game Data API call returned HTTP error')
+        #     except Exception as err:
+        #         print(f'Game Data API call returned a non-HTTP error')
+        #     else:
+        #         print(f'Game Data API call successful')
+    else:
+        logger.error(f'start year {start_date.year} or end year {end_date.year} is not a valid year.')
 
     # # conv API response to text
     # req_text = req.text
