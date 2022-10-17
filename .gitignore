@@ -526,3 +526,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+
+
+# MANUALLY ADDED
+*config.toml
+.aws-sam

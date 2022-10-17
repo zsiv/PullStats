@@ -1,0 +1,2 @@
+requests
+pg8000

@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  PullStats Lambda Stack
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  PullStatsIngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pullstats-ingest-lambda/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 60
+      FunctionName: pullstats-ingest-lambda
+      Description: "PullStats API ingest lambda function"
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-24b52b23
+        SubnetIds:
+          - subnet-0021c91309cc6248e
+      Architectures:
+        - x86_64
+      Policies:
+        - AmazonSQSFullAccess
+  PullStatsConsumeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pullstats-consume-lambda/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 600
+      FunctionName: pullstats-consume-lambda
+      Description: "PullStats API consume lambda function"
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: { "Fn::GetAtt" : ["PullStatsSQSQueue" , "Arn"] } # <--- possible linter bug, validates and deploys
+            BatchSize: 1
+            Enabled: true
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-24b52b23
+        SubnetIds:
+          - subnet-0021c91309cc6248e
+      Architectures:
+        - x86_64
+      Policies:
+        - AmazonSQSFullAccess
+  PullStatsSQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "pullstats-sqs.fifo"
+      VisibilityTimeout: 1200
+      ContentBasedDeduplication: true
+      FifoQueue: true
+  PullStatsAuroraCluster:
+    Type: 'AWS::RDS::DBCluster'
+    Properties:
+      MasterUsername: 'pullstatsadmin'
+      MasterUserPassword: 'ChangeMe!'
+      DBClusterIdentifier: pullstats-aurora-cluster
+      Engine: aurora-postgresql
+      EngineVersion: '14.4'
+      DBClusterParameterGroupName: default.aurora-postgresql14
+      EnableCloudwatchLogsExports:
+        - postgresql
+  PullStatsAuroraDB:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceIdentifier: pullstats-aurora-db
+      Engine: aurora-postgresql
+      DBClusterIdentifier: !Ref PullStatsAuroraCluster
+      PubliclyAccessible: 'false'
+      DBInstanceClass: db.t3.medium
+Outputs:
+  PullStatsIngestFunction:
+    Description: "PullStats Ingest Lambda Function ARN"
+    Value: !GetAtt PullStatsIngestFunction.Arn
+  PullStatsIngestFunctionIamRole:
+    Description: "Implicit IAM Role created for PullStats Ingest function"
+    Value: !GetAtt PullStatsIngestFunctionRole.Arn
+  PullStatsQueueURL: 
+    Description: "URL of PullStats Amazon SQS Queue"
+    Value: 
+      Ref: "PullStatsSQSQueue"
