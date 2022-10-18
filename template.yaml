@@ -19,9 +19,9 @@ Resources:
       Description: "PullStats API ingest lambda function"
       VpcConfig:
         SecurityGroupIds:
-          - sg-24b52b23
+          - <your vpc sec group>
         SubnetIds:
-          - subnet-0021c91309cc6248e
+          - <your private subnet group>
       Architectures:
         - x86_64
       Policies:
@@ -44,9 +44,9 @@ Resources:
             Enabled: true
       VpcConfig:
         SecurityGroupIds:
-          - sg-24b52b23
+          - <your vpc sec group>
         SubnetIds:
-          - subnet-0021c91309cc6248e
+          - <your private subnet group>
       Architectures:
         - x86_64
       Policies:

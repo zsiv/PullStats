@@ -47,7 +47,7 @@ def lambda_handler(event, context):
     postgres_conn = pg8000.native.Connection(
         user="pullstatsadmin",
         password="ChangeMe!",
-        host="pullstats-aurora-db.cqealbrbwgme.us-east-1.rds.amazonaws.com",
+        host="<your_hostname>",
         port="5432",
         database="PullStats"
     )

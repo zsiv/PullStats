@@ -14,11 +14,12 @@ Install:
 
 Post-install:
 - Connect to Aurora Postgres instance and run schema setup in 'prep_db.pgsql' to establish required schema
+- Replace hardcoded database URL with your CF-generated Aurora Postgres RDS endpoint URL in pullstats-consume-lambda/app.py line 46 and pullstats-ingest-lambda/app.py line 50
 
 Notes:
 - While this could probably be deployed on a free tier account, it will likely incur minor costs when executing the Lambda functions and ongoing aurora postgres rds instance expenses
 - Defaults setup resources in 'us-east-1' AWS zone
 
 To Do:
-- Hard coded secrets (nothing public facing) to be replaced with generated passwords in Secrets Manager with references in CF template
+- Hard coded secrets (nothing public facing) to be replaced with generated passwords in Secrets Manager with references in CF template/Lambda functions
 - Better logic for large API calls, such as MLB.com full game data pulls, to work around 256kb limit for SQS queue records
