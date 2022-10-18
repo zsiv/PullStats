@@ -30,6 +30,11 @@ CREATE TABLE IF NOT EXISTS gameindex (
     gameDate  DATE NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS jsonqueue (
+    recordId  SERIAL PRIMARY KEY,
+    gameJson  TEXT NOT NULL
+);
+
 -- place an index on gameDate col
 CREATE INDEX ix_gameDate
 ON gameindex (gameDate);

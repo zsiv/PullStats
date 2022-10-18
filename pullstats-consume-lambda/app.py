@@ -1,6 +1,6 @@
 # pullstats-consume-lambda.py - MLB API SQS consume app
-# N. Schatz - 10/14/22
-# Version 1
+# N. Schatz - 10/18/22
+# Version 2
 
 # Required Modules:
 #
@@ -15,11 +15,13 @@
 # Changelog:
 #
 # 10/14/22 - Initial script
+# 10/18/22 - Comments/finalization
 
 # To do:
 #
 #  - Generate SQS queue consumption logic
 #  - Better password logic with secrets manager
+#  - Correct json parse/import
 
 # imports
 import json
@@ -50,22 +52,31 @@ def lambda_handler(event, context):
     for record in event['Records']:
         payload = record["body"].replace("'", "\"")
 
-        # convert JSON to dict
-        payload_json = json.loads(payload)
+        # check for record type, process accordingly
+        attribs = record["messageAttributes"]
 
-        # <<<<if condition to split different records>>>>>
+        if attribs:
+            try: 
+                print(f'json parse for import')
+                # payload_string = str(payload)
+                # postgres_conn.run(f"INSERT INTO jsonqueue(gameJson) VALUES({payload_string});")
+            except Exception as e:
+                print(e)
+        else:
+            # convert JSON to dict
+            payload_json = json.loads(payload)
 
-        # generate games JSON and attempt to upsert records:
-        for date in payload_json["dates"]:
-            for game in date["games"]:
-                try: 
-                    gamePk = game["gamePk"]
-                    gameDateTime = game["gameDate"]
-                    day, split, time = gameDateTime.partition('T')
-                    gameDate = day
-                    postgres_conn.run(f"INSERT INTO gameindex(gamepk,gamedate) VALUES({gamePk}, '{gameDate}') ON CONFLICT ON CONSTRAINT gameindex_pkey DO NOTHING;")
-                except Exception as e:
-                    print(e)
+            # generate games key JSON and attempt to upsert records:
+            for date in payload_json["dates"]:
+                for game in date["games"]:
+                    try: 
+                        gamePk = game["gamePk"]
+                        gameDateTime = game["gameDate"]
+                        day, split, time = gameDateTime.partition('T')
+                        gameDate = day
+                        postgres_conn.run(f"INSERT INTO gameindex(gamepk,gamedate) VALUES({gamePk}, '{gameDate}') ON CONFLICT ON CONSTRAINT gameindex_pkey DO NOTHING;")
+                    except Exception as e:
+                        print(e)
 
     # clean up pg connection
     postgres_conn.close()
